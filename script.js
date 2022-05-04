@@ -1,16 +1,21 @@
 // getting objects out of the matter library via destructuring
-const { Engine, Render, Runner, World, Bodies } = Matter;
+const { Engine, Render, Runner, World, Bodies, Body, Events } = Matter;
 // engine used to transition from current state of world to new state, render is used to draw stuff onto screen, runner coordinates updates between engine and world, bodies represents our ability to create shapes
 
 // BOILER PLATE CODE FOR MATTER JS- do not need to 100% understand boiler plate. a lot of this stuff just gets duplicate between matter aps
 // cells talking about horizontal or vertical edge
-const cells = 3;
+const cellsHorizontal = 4;
+const cellsVertical = 3;
 
-const width = 600;
-const height = 600;
-const unitLength = width / cells;
+// window.innherWidth and innerHeight takes the width of viewable window
+const width = window.innerWidth;
+const height = window.innerHeight;
+const unitLengthX = width / cellsHorizontal;
+const unitLengthY = height / cellsVertical;
 
 const engine = Engine.create();
+// to disbale gravity:
+engine.world.gravity.y = 0;
 const { world } = engine;
 // when we create engine, we get world object with it
 const render = Render.create({
@@ -18,7 +23,7 @@ const render = Render.create({
   engine: engine,
   options: {
     //   wireframe at false is solid shapes with random colors, true is just frames of the shapes
-    wireframes: true,
+    wireframes: false,
     width: width,
     height: height,
   },
@@ -37,12 +42,23 @@ Runner.run(Runner.create(), engine);
 
 // Wall
 const walls = [
-  Bodies.rectangle(width / 2, 0, width, 2, { isStatic: true }),
-  Bodies.rectangle(width / 2, height, width, 2, { isStatic: true }),
-  Bodies.rectangle(0, height / 2, 2, height, { isStatic: true }),
-  Bodies.rectangle(width, height / 2, 2, height, { isStatic: true }),
+  Bodies.rectangle(width / 2, 0, width, 2, {
+    isStatic: true,
+    render: { fillStyle: "yellow" },
+  }),
+  Bodies.rectangle(width / 2, height, width, 2, {
+    isStatic: true,
+    render: { fillStyle: "yellow" },
+  }),
+  Bodies.rectangle(0, height / 2, 2, height, {
+    isStatic: true,
+    render: { fillStyle: "yellow" },
+  }),
+  Bodies.rectangle(width, height / 2, 2, height, {
+    isStatic: true,
+    render: { fillStyle: "yellow" },
+  }),
 ];
-
 World.add(world, walls);
 
 // MAZE GENERATION
@@ -72,22 +88,22 @@ const shuffle = (arr) => {
 // ANOTHER WAY TO WRITE below
 
 // create an empty array with 3 places in it, then map over each array with an array of length 3 with 3 false sttements.
-const grid = Array(cells)
+const grid = Array(cellsVertical)
   .fill(null)
-  .map(() => Array(cells).fill(false));
+  .map(() => Array(cellsHorizontal).fill(false));
 // must use map and can't just fill with [false, false, false] because it would be the one(same) array being thrown in every location. in memory, it is only one array and it will affect every index.modifying one, modifys all
 
-const verticals = Array(cells)
+const verticals = Array(cellsVertical)
   .fill(null)
-  .map(() => Array(cells - 1).fill(false));
+  .map(() => Array(cellsHorizontal - 1).fill(false));
 
-const horizontals = Array(cells - 1)
+const horizontals = Array(cellsVertical - 1)
   .fill(null)
-  .map(() => Array(cells).fill(false));
+  .map(() => Array(cellsHorizontal).fill(false));
 
 //   Picking random starting cell
-const startRow = Math.floor(Math.random() * cells);
-const startColumn = Math.floor(Math.random() * cells);
+const startRow = Math.floor(Math.random() * cellsVertical);
+const startColumn = Math.floor(Math.random() * cellsHorizontal);
 
 const stepThroughCell = (row, column) => {
   // If visited the cell at [row,column], then return
@@ -110,9 +126,9 @@ const stepThroughCell = (row, column) => {
     // See if neighbor is out of bounds
     if (
       nextRow < 0 ||
-      nextRow >= cells ||
+      nextRow >= cellsVertical ||
       nextColumn < 0 ||
-      nextColumn >= cells
+      nextColumn >= cellsHorizontal
     ) {
       continue;
     }
@@ -143,11 +159,11 @@ horizontals.forEach((row, rowIndex) => {
       return;
     }
     const wall = Bodies.rectangle(
-      columnIndex + unitLength + unitLength / 2,
-      rowIndex * unitLength + unitLength,
-      unitLength,
-      10,
-      { isStatic: true }
+      columnIndex * unitLengthX + unitLengthX / 2,
+      rowIndex * unitLengthY + unitLengthY,
+      unitLengthX,
+      5,
+      { label: "wall", isStatic: true, render: { fillStyle: "red" } }
     );
     World.add(world, wall);
   });
@@ -159,22 +175,68 @@ verticals.forEach((row, rowIndex) => {
       return;
     }
     const wall = Bodies.rectangle(
-      columnIndex * unitLength + unitLength,
-      rowIndex * unitLength + unitLength / 2,
-      10,
-      unitLength,
-      { isStatic: true }
+      columnIndex * unitLengthX + unitLengthX,
+      rowIndex * unitLengthY + unitLengthY / 2,
+      5,
+      unitLengthY,
+      { label: "wall", isStatic: true, render: { fillStyle: "red" } }
     );
     World.add(world, wall);
   });
 });
-
+// GOAL
 const goal = Bodies.rectangle(
-  width - unitLength / 2,
-  height - unitLength / 2,
-  unitLength * 0.7,
-  unitLength * 0.7,
-  { isStatic: true }
+  width - unitLengthX / 2,
+  height - unitLengthY / 2,
+  unitLengthX * 0.7,
+  unitLengthY * 0.7,
+  { label: "goal", isStatic: true, render: { fillStyle: "green" } }
 );
 
 World.add(world, goal);
+
+// BALL
+const ballRadius = Math.min(unitLengthX, unitLengthY) / 4;
+const ball = Bodies.circle(unitLengthX / 2, unitLengthY / 2, ballRadius, {
+  label: "ball",
+  render: { fillStyle: "blue" },
+});
+World.add(world, ball);
+
+document.addEventListener("keydown", (event) => {
+  const { x, y } = ball.velocity;
+  if (event.key === "ArrowUp") {
+    Body.setVelocity(ball, { x, y: y - 5 });
+  }
+  if (event.key === "ArrowRight") {
+    Body.setVelocity(ball, { x: x + 5, y });
+  }
+  if (event.key === "ArrowDown") {
+    Body.setVelocity(ball, { x, y: y + 5 });
+  }
+  if (event.key === "ArrowLeft") {
+    Body.setVelocity(ball, { x: x - 5, y });
+  }
+});
+
+// Win Conditions
+
+Events.on(engine, "collisionStart", (event) => {
+  event.pairs.forEach((collision) => {
+    const labels = ["ball", "goal"];
+    if (
+      // shorter way to write if statements to check if all labels present?
+      labels.includes(collision.bodyA.label) &&
+      labels.includes(collision.bodyB.label)
+    ) {
+      document.querySelector(".winner").classList.remove("hidden");
+      // turning back gracity on to let user know they won
+      world.gravity.y = 1;
+      world.bodies.forEach((body) => {
+        if (body.label === "wall") {
+          Body.setStatic(body, false);
+        }
+      });
+    }
+  });
+});
