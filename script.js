@@ -3,6 +3,9 @@ const { Engine, Render, Runner, World, Bodies } = Matter;
 // engine used to transition from current state of world to new state, render is used to draw stuff onto screen, runner coordinates updates between engine and world, bodies represents our ability to create shapes
 
 // BOILER PLATE CODE FOR MATTER JS- do not need to 100% understand boiler plate. a lot of this stuff just gets duplicate between matter aps
+// cells talking about horizontal or vertical edge
+const cells = 3;
+
 const width = 600;
 const height = 600;
 
@@ -53,8 +56,20 @@ World.add(world, walls);
 // }
 
 // create an empty array with 3 places in it, then map over each array with an array of length 3 with 3 false sttements.
-const grid = Array(3)
+const grid = Array(cells)
   .fill(null)
-  .map(() => Array(3).fill(false));
+  .map(() => Array(cells).fill(false));
 // must use map and can't just fill with [false, false, false] because it would be the one(same) array being thrown in every location. in memory, it is only one array and it will affect every index.modifying one, modifys all
-console.log(grid);
+
+const verticals = Array(cells)
+  .fill(null)
+  .map(() => Array(cells - 1).fill(false));
+
+const horizontals = Array(cells - 1)
+  .fill(null)
+  .map(() => Array(cells).fill(false));
+
+const startRow = Math.floor(Math.random() * cells);
+const startColumn = Math.floor(Math.random() * cells);
+
+console.log(startRow, startColumn);
