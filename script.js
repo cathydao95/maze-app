@@ -1,11 +1,9 @@
 // getting objects out of the matter library via destructuring
 const { Engine, Render, Runner, World, Bodies, Body, Events } = Matter;
-// engine used to transition from current state of world to new state, render is used to draw stuff onto screen, runner coordinates updates between engine and world, bodies represents our ability to create shapes
 
-// BOILER PLATE CODE FOR MATTER JS- do not need to 100% understand boiler plate. a lot of this stuff just gets duplicate between matter aps
 // cells talking about horizontal or vertical edge
-const cellsHorizontal = 4;
-const cellsVertical = 3;
+const cellsHorizontal = 8;
+const cellsVertical = 6;
 
 // window.innherWidth and innerHeight takes the width of viewable window
 const width = window.innerWidth;
@@ -14,15 +12,14 @@ const unitLengthX = width / cellsHorizontal;
 const unitLengthY = height / cellsVertical;
 
 const engine = Engine.create();
-// to disbale gravity:
+// Disable Gravity
 engine.world.gravity.y = 0;
 const { world } = engine;
-// when we create engine, we get world object with it
 const render = Render.create({
   element: document.body,
   engine: engine,
   options: {
-    //   wireframe at false is solid shapes with random colors, true is just frames of the shapes
+    //   wireframe at false for solid shapes and true for frames
     wireframes: false,
     width: width,
     height: height,
@@ -31,14 +28,6 @@ const render = Render.create({
 // render object shows content on screen and pass options object
 Render.run(render);
 Runner.run(Runner.create(), engine);
-
-// //to add shape to our world
-// // 200 and 200 gets the center of the rectangle and 50 and 50 is height and width of the rectangle
-// const shape = Bodies.rectangle(200, 200, 50, 50, {
-//   //   isStatic true makes shape stay where it is, if false, it will move
-//   isStatic: true,
-// });
-// World.add(world, shape);
 
 // Wall
 const walls = [
@@ -78,20 +67,10 @@ const shuffle = (arr) => {
   return arr;
 };
 
-// const grid = [];
-// for (let i = 0; i < 3; i++) {
-//   grid.push([]);
-//   for (let j = 0; j < 3; j++) {
-//     grid[i].push(false);
-//   }
-// }
-// ANOTHER WAY TO WRITE below
-
-// create an empty array with 3 places in it, then map over each array with an array of length 3 with 3 false sttements.
+// create an empty array with 3 places in it, then map over each array
 const grid = Array(cellsVertical)
   .fill(null)
   .map(() => Array(cellsHorizontal).fill(false));
-// must use map and can't just fill with [false, false, false] because it would be the one(same) array being thrown in every location. in memory, it is only one array and it will affect every index.modifying one, modifys all
 
 const verticals = Array(cellsVertical)
   .fill(null)
@@ -110,9 +89,9 @@ const stepThroughCell = (row, column) => {
   if (grid[row][column]) {
     return;
   }
-  // Mark cell has being visited -- aka update element in grid array to true
+  // Mark cell has being visited
   grid[row][column] = true;
-  // Assembly randomly -ordered list of neighbors and randomize neighbor list
+  // Assembly randomly
   const neighbors = shuffle([
     [row - 1, column, "up"],
     [row, column + 1, "right"],
@@ -225,12 +204,10 @@ Events.on(engine, "collisionStart", (event) => {
   event.pairs.forEach((collision) => {
     const labels = ["ball", "goal"];
     if (
-      // shorter way to write if statements to check if all labels present?
       labels.includes(collision.bodyA.label) &&
       labels.includes(collision.bodyB.label)
     ) {
       document.querySelector(".winner").classList.remove("hidden");
-      // turning back gracity on to let user know they won
       world.gravity.y = 1;
       world.bodies.forEach((body) => {
         if (body.label === "wall") {
